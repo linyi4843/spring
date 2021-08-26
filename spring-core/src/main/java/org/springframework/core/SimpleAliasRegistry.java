@@ -207,6 +207,9 @@ public class SimpleAliasRegistry implements AliasRegistry {
 	 * @return the transformed name
 	 */
 	public String canonicalName(String name) {
+		// beanName是可以有别名的,比如在aliasMap中储存
+		// 不如{"C":"B","B":"A"} A的别名是B,B又有一个别名为C,这时候获取c的真实对象为A
+		// 循环获取最终真实的beanName
 		String canonicalName = name;
 		// Handle aliasing...
 		String resolvedName;

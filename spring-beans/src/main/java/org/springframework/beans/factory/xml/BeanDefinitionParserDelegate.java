@@ -412,17 +412,28 @@ public class BeanDefinitionParserDelegate {
 	 */
 	@Nullable
 	public BeanDefinitionHolder parseBeanDefinitionElement(Element ele, @Nullable BeanDefinition containingBean) {
+		// <bean id = "xx", name = "xx">...</bean>
+		// id 属性
 		String id = ele.getAttribute(ID_ATTRIBUTE);
+		// name 属性
 		String nameAttr = ele.getAttribute(NAME_ATTRIBUTE);
-
+		// 别名列表
 		List<String> aliases = new ArrayList<>();
+		//
 		if (StringUtils.hasLength(nameAttr)) {
+			// 将name属性 按照 ,; 进行拆封   数组化
 			String[] nameArr = StringUtils.tokenizeToStringArray(nameAttr, MULTI_VALUE_ATTRIBUTE_DELIMITERS);
+			// 放到别名列表
 			aliases.addAll(Arrays.asList(nameArr));
 		}
 
+		// beanName默认为id
 		String beanName = id;
+		// id属性非必有,判断一下
+		// 1 true id 没有值
+		// 2 true 别名有值
 		if (!StringUtils.hasText(beanName) && !aliases.isEmpty()) {
+			// 拿别名第一个属性值当做beanName
 			beanName = aliases.remove(0);
 			if (logger.isTraceEnabled()) {
 				logger.trace("No XML 'id' specified - using '" + beanName +
@@ -434,8 +445,11 @@ public class BeanDefinitionParserDelegate {
 			checkNameUniqueness(beanName, aliases, ele);
 		}
 
+		// 主要干活方法
 		AbstractBeanDefinition beanDefinition = parseBeanDefinitionElement(ele, beanName, containingBean);
+
 		if (beanDefinition != null) {
+			// 别名为空
 			if (!StringUtils.hasText(beanName)) {
 				try {
 					if (containingBean != null) {
@@ -443,14 +457,19 @@ public class BeanDefinitionParserDelegate {
 								beanDefinition, this.readerContext.getRegistry(), true);
 					}
 					else {
+						// 生成别名  beanClassName + # + 序列号
 						beanName = this.readerContext.generateBeanName(beanDefinition);
 						// Register an alias for the plain bean class name, if still possible,
 						// if the generator returned the class name plus a suffix.
 						// This is expected for Spring 1.2/2.0 backwards compatibility.
 						String beanClassName = beanDefinition.getBeanClassName();
+						// 前几个条件都成立
+						// !this.readerContext.getRegistry().isBeanNameInUse(beanClassName)
+						// 判断当前是否被使用,没有被使用则添加到别名队列,谁先到别名是谁的
 						if (beanClassName != null &&
 								beanName.startsWith(beanClassName) && beanName.length() > beanClassName.length() &&
 								!this.readerContext.getRegistry().isBeanNameInUse(beanClassName)) {
+							// 添加至队列
 							aliases.add(beanClassName);
 						}
 					}
@@ -499,7 +518,7 @@ public class BeanDefinitionParserDelegate {
 	@Nullable
 	public AbstractBeanDefinition parseBeanDefinitionElement(
 			Element ele, String beanName, @Nullable BeanDefinition containingBean) {
-
+		//
 		this.parseState.push(new BeanEntry(beanName));
 
 		String className = null;
@@ -512,17 +531,25 @@ public class BeanDefinitionParserDelegate {
 		}
 
 		try {
-			AbstractBeanDefinition bd = createBeanDefinition(className, parent);
+			// 创建 bd对象,只设置了 class 信息
+			AbstractBeanDefinition bd = createBeanDefinition(className , parent);
 
+			// 解析Bean标签上的 attributes 的信息
 			parseBeanDefinitionAttributes(ele, beanName, containingBean, bd);
+			//解析 Bean标签的的  <description>...</description>
+			// 设置的bd属性中
 			bd.setDescription(DomUtils.getChildElementValueByTagName(ele, DESCRIPTION_ELEMENT));
-
+			// <meta key = "xx", value = "xx"><meta>
 			parseMetaElements(ele, bd);
+			// 解析该标签 该标签可以实例抽象类TODO
 			parseLookupOverrideSubElements(ele, bd.getMethodOverrides());
+			// 解析该标签,该标签可以替换原有的方法
 			parseReplacedMethodSubElements(ele, bd.getMethodOverrides());
-
+			// 解析构造参数
 			parseConstructorArgElements(ele, bd);
+			// 解析子属性
 			parsePropertyElements(ele, bd);
+			// 寻找固定的一个实例
 			parseQualifierElements(ele, bd);
 
 			bd.setResource(this.readerContext.getResource());

@@ -838,6 +838,9 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		return resolver.isAutowireCandidate(holder, descriptor);
 	}
 
+	/**
+	 *  这里beanDefinitionMap项目中所有的定义的bean都会被放入beanDefinitionMap,然后拿出来生成springBean
+	 */
 	@Override
 	public BeanDefinition getBeanDefinition(String beanName) throws NoSuchBeanDefinitionException {
 		BeanDefinition bd = this.beanDefinitionMap.get(beanName);
