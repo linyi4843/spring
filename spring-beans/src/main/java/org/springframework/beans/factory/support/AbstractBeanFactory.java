@@ -256,7 +256,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		Object bean;
 
 		// Eagerly check singleton cache for manually registered singletons.
-		// 查看是否有循环依赖
+		// 查看是否有循环依赖,有值则说明存在循环依赖,不需要重新创建对象
 		Object sharedInstance = getSingleton(beanName);
 		// case1 : 可能是单实例,也可能是factoryBean对象,已经存在
 		if (sharedInstance != null && args == null) {
@@ -329,7 +329,6 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				// 这里用了两个map来解决问题
 				// dependentBeanMap  用于存放,其他beanName依赖自己的beanName
 				// dependenciesForBeanMap  用于存放自己beanName依赖其他的beanName
-
 				String[] dependsOn = mbd.getDependsOn();
 				if (dependsOn != null) {
 					for (String dep : dependsOn) {
@@ -354,6 +353,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				// case 单例情况
 				// Create bean instance.
 				if (mbd.isSingleton()) {
+					// 创建好对象并写入一级缓存
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
 							return createBean(beanName, mbd, args);
@@ -1960,7 +1960,11 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @see org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor
 	 */
 	protected boolean requiresDestruction(Object bean, RootBeanDefinition mbd) {
-		return (bean.getClass() != NullBean.class && (DisposableBeanAdapter.hasDestroyMethod(bean, mbd) ||
+		return (bean.getClass() != NullBean.class &&
+				// bd中注册了destoryMethod小户型才会回调
+				(DisposableBeanAdapter.hasDestroyMethod(bean, mbd) ||
+						//  通过后处理器框架决定是否析构回调
+						// 后处理器调用点
 				(hasDestructionAwareBeanPostProcessors() && DisposableBeanAdapter.hasApplicableProcessors(
 						bean, getBeanPostProcessorCache().destructionAware))));
 	}
@@ -1979,11 +1983,13 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 */
 	protected void registerDisposableBeanIfNecessary(String beanName, Object bean, RootBeanDefinition mbd) {
 		AccessControlContext acc = (System.getSecurityManager() != null ? getAccessControlContext() : null);
+		// 原型模式不会注册 析构回调
 		if (!mbd.isPrototype() && requiresDestruction(bean, mbd)) {
 			if (mbd.isSingleton()) {
 				// Register a DisposableBean implementation that performs all destruction
 				// work for the given bean: DestructionAwareBeanPostProcessors,
 				// DisposableBean interface, custom destroy method.
+				// 给当前接口注册回调适配器,适配器内根据当前bean是集成接口,还是自定义实现来决定调用哪个接口,完成析构操作
 				registerDisposableBean(beanName, new DisposableBeanAdapter(
 						bean, beanName, mbd, getBeanPostProcessorCache().destructionAware, acc));
 			}

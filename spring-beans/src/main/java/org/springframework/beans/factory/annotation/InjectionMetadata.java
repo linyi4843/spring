@@ -121,12 +121,14 @@ public class InjectionMetadata {
 	public void inject(Object target, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
 		Collection<InjectedElement> checkedElements = this.checkedElements;
 		Collection<InjectedElement> elementsToIterate =
-				(checkedElements != null ? checkedElements : this.injectedElements);
+				(checkedElements != null ? checkedElements : this.injectedElements);//注解集合
 		if (!elementsToIterate.isEmpty()) {
+			// 迭代处理需要解析的注解信息
 			for (InjectedElement element : elementsToIterate) {
 				if (logger.isTraceEnabled()) {
 					logger.trace("Processing injected element of bean '" + beanName + "': " + element);
 				}
+				// 注入
 				element.inject(target, beanName, pvs);
 			}
 		}
