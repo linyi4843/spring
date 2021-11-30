@@ -473,7 +473,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		if (alreadySeen != null && alreadySeen.contains(beanName)) {
 			return false;
 		}
-		// 获取最终的beanName
+		// 获取最终的beanName,去除别名
 		String canonicalName = canonicalName(beanName);
 		// 其他beanName依赖自己的map,这里用来判断其他beanName有没有依赖自己
 		Set<String> dependentBeans = this.dependentBeanMap.get(canonicalName);
